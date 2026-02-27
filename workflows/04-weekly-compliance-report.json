@@ -1,0 +1,102 @@
+{
+	"name": "Lockwave: Weekly Compliance Report",
+	"nodes": [
+		{
+			"parameters": {
+				"rule": { "interval": [{ "field": "weeks", "weekInterval": 1, "triggerAtDay": 1, "triggerAtHour": 9 }] }
+			},
+			"id": "schedule",
+			"name": "Every Monday 9am",
+			"type": "n8n-nodes-base.scheduleTrigger",
+			"typeVersion": 1,
+			"position": [200, 300]
+		},
+		{
+			"parameters": {
+				"resource": "report",
+				"operation": "create",
+				"reportType": "team_access",
+				"format": "csv"
+			},
+			"id": "request-team-report",
+			"name": "Request Team Access Report",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [400, 200],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "report",
+				"operation": "create",
+				"reportType": "host_access",
+				"format": "csv"
+			},
+			"id": "request-host-report",
+			"name": "Request Host Access Report",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [400, 400],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"amount": 30,
+				"unit": "seconds"
+			},
+			"id": "wait",
+			"name": "Wait 30s for Generation",
+			"type": "n8n-nodes-base.wait",
+			"typeVersion": 1,
+			"position": [600, 300]
+		},
+		{
+			"parameters": {
+				"resource": "report",
+				"operation": "getAll",
+				"returnAll": false,
+				"limit": 5
+			},
+			"id": "check-reports",
+			"name": "Check Report Status",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [800, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"to": "compliance@company.com",
+				"subject": "Weekly Lockwave Compliance Reports",
+				"text": "=Weekly compliance reports have been generated.\n\nPlease log in to Lockwave to download:\n- Team Access Report\n- Host Access Report\n\nGenerated automatically by n8n workflow."
+			},
+			"id": "email-compliance",
+			"name": "Email Compliance Team",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2,
+			"position": [1000, 300]
+		}
+	],
+	"connections": {
+		"Every Monday 9am": {
+			"main": [
+				[
+					{ "node": "Request Team Access Report", "type": "main", "index": 0 },
+					{ "node": "Request Host Access Report", "type": "main", "index": 0 }
+				]
+			]
+		},
+		"Request Team Access Report": { "main": [[{ "node": "Wait 30s for Generation", "type": "main", "index": 0 }]] },
+		"Request Host Access Report": { "main": [[{ "node": "Wait 30s for Generation", "type": "main", "index": 0 }]] },
+		"Wait 30s for Generation": { "main": [[{ "node": "Check Report Status", "type": "main", "index": 0 }]] },
+		"Check Report Status": { "main": [[{ "node": "Email Compliance Team", "type": "main", "index": 0 }]] }
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "compliance" }, { "name": "scheduled" }]
+}

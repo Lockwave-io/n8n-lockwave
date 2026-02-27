@@ -1,0 +1,81 @@
+{
+	"name": "Lockwave: Break Glass Alert",
+	"nodes": [
+		{
+			"parameters": {
+				"event": "breakGlassActivated"
+			},
+			"id": "trigger-bg",
+			"name": "Break Glass Trigger",
+			"type": "n8n-nodes-lockwave.lockwaveTrigger",
+			"typeVersion": 1,
+			"position": [200, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"channel": "#security-alerts",
+				"text": "=:rotating_light: *BREAK GLASS ACTIVATED* :rotating_light:\n\n*Scope:* {{ $json.scope_type }}\n*Reason:* {{ $json.reason }}\n*Activated by:* {{ $json.activated_by?.name ?? 'Unknown' }}\n*Time:* {{ $json.activated_at }}\n\nAll SSH access has been frozen. Review immediately.",
+				"otherOptions": {}
+			},
+			"id": "slack-alert",
+			"name": "Slack Alert",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [400, 200]
+		},
+		{
+			"parameters": {
+				"to": "security-team@company.com",
+				"subject": "=URGENT: Lockwave Break Glass Activated - {{ $json.scope_type }}",
+				"text": "=Break glass has been activated.\n\nScope: {{ $json.scope_type }}\nReason: {{ $json.reason }}\nActivated by: {{ $json.activated_by?.name ?? 'Unknown' }}\nTime: {{ $json.activated_at }}\n\nAll SSH access is now frozen. Log in to Lockwave to review and deactivate when resolved."
+			},
+			"id": "email-alert",
+			"name": "Email Security Team",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2,
+			"position": [400, 400]
+		},
+		{
+			"parameters": {
+				"url": "https://api.pagerduty.com/incidents",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{ "name": "Authorization", "value": "Token token=YOUR_PAGERDUTY_TOKEN" },
+						{ "name": "Content-Type", "value": "application/json" }
+					]
+				},
+				"sendBody": true,
+				"bodyParameters": {
+					"parameters": [
+						{
+							"name": "incident",
+							"value": "={\"type\":\"incident\",\"title\":\"Lockwave Break Glass: {{ $json.reason }}\",\"service\":{\"id\":\"YOUR_SERVICE_ID\",\"type\":\"service_reference\"},\"urgency\":\"high\"}"
+						}
+					]
+				}
+			},
+			"id": "pagerduty",
+			"name": "PagerDuty Incident",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4,
+			"position": [400, 600]
+		}
+	],
+	"connections": {
+		"Break Glass Trigger": {
+			"main": [
+				[
+					{ "node": "Slack Alert", "type": "main", "index": 0 },
+					{ "node": "Email Security Team", "type": "main", "index": 0 },
+					{ "node": "PagerDuty Incident", "type": "main", "index": 0 }
+				]
+			]
+		}
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "security" }, { "name": "incident-response" }]
+}

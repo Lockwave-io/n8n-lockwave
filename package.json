@@ -1,0 +1,49 @@
+{
+	"name": "n8n-nodes-lockwave",
+	"version": "0.1.0",
+	"description": "n8n community node for the Lockwave SSH Key Management API",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"lockwave",
+		"ssh",
+		"key-management",
+		"devops",
+		"infrastructure"
+	],
+	"license": "MIT",
+	"homepage": "https://lockwave.io",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/lockwave-io/n8n-nodes-lockwave.git"
+	},
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc && gulp build:icons",
+		"dev": "tsc --watch",
+		"lint": "tslint -p tsconfig.json -c tslint.json",
+		"lintfix": "tslint --fix -p tsconfig.json -c tslint.json"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"credentials": [
+			"dist/credentials/LockwaveApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Lockwave/Lockwave.node.js",
+			"dist/nodes/Lockwave/LockwaveTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"gulp": "^4.0.2",
+		"n8n-workflow": "*",
+		"typescript": "~5.4.0"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}

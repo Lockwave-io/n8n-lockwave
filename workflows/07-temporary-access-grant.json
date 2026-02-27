@@ -1,0 +1,86 @@
+{
+	"name": "Lockwave: Temporary Access Grant",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "webhook",
+			"name": "Webhook Trigger",
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 1,
+			"position": [200, 300],
+			"webhookId": "lockwave-temp-access"
+		},
+		{
+			"parameters": {
+				"resource": "sshKey",
+				"operation": "create",
+				"name": "=temp-access-{{ $json.body.requester }}",
+				"mode": "generate",
+				"keyType": "ed25519"
+			},
+			"id": "generate-key",
+			"name": "Generate Temp SSH Key",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [400, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "assignment",
+				"operation": "create",
+				"sshKeyId": "={{ $json.id }}",
+				"hostUserId": "={{ $('Webhook Trigger').item.json.body.hostUserId }}",
+				"expiresAt": "={{ DateTime.now().plus({ hours: Number($('Webhook Trigger').item.json.body.durationHours) || 4 }).toISO() }}"
+			},
+			"id": "create-temp-assignment",
+			"name": "Create Time-Limited Assignment",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [600, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"channel": "#access-requests",
+				"text": "=:clock3: *Temporary access granted*\n*Requester:* {{ $('Webhook Trigger').item.json.body.requester }}\n*Host User:* {{ $('Webhook Trigger').item.json.body.hostUserId }}\n*Duration:* {{ $('Webhook Trigger').item.json.body.durationHours || 4 }} hours\n*Expires:* {{ $json.expires_at }}\n\nPrivate key has been delivered to the requester securely.",
+				"otherOptions": {}
+			},
+			"id": "notify-access",
+			"name": "Notify Access Grant",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [800, 200]
+		},
+		{
+			"parameters": {
+				"to": "={{ $('Webhook Trigger').item.json.body.email }}",
+				"subject": "Your temporary SSH access credentials",
+				"text": "=Your temporary SSH access has been provisioned.\n\nPrivate key (save to ~/.ssh/temp_key and chmod 600):\n{{ $('Generate Temp SSH Key').item.json.private_key }}\n\nThis access expires in {{ $('Webhook Trigger').item.json.body.durationHours || 4 }} hours.\nExpiry: {{ $json.expires_at }}"
+			},
+			"id": "email-key",
+			"name": "Email Private Key",
+			"type": "n8n-nodes-base.emailSend",
+			"typeVersion": 2,
+			"position": [800, 400]
+		}
+	],
+	"connections": {
+		"Webhook Trigger": { "main": [[{ "node": "Generate Temp SSH Key", "type": "main", "index": 0 }]] },
+		"Generate Temp SSH Key": { "main": [[{ "node": "Create Time-Limited Assignment", "type": "main", "index": 0 }]] },
+		"Create Time-Limited Assignment": {
+			"main": [
+				[
+					{ "node": "Notify Access Grant", "type": "main", "index": 0 },
+					{ "node": "Email Private Key", "type": "main", "index": 0 }
+				]
+			]
+		}
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "access-management" }, { "name": "temporary" }]
+}

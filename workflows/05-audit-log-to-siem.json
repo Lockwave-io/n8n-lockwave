@@ -1,0 +1,117 @@
+{
+	"name": "Lockwave: Audit Events to SIEM",
+	"nodes": [
+		{
+			"parameters": {
+				"event": "auditEvent"
+			},
+			"id": "audit-trigger",
+			"name": "New Audit Event",
+			"type": "n8n-nodes-lockwave.lockwaveTrigger",
+			"typeVersion": 1,
+			"position": [200, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"jsCode": "const event = $input.item.json;\n\nreturn {\n  json: {\n    timestamp: event.created_at,\n    source: 'lockwave',\n    event_type: event.event_type,\n    actor: {\n      type: event.actor_type,\n      id: event.actor_id,\n    },\n    details: event.payload,\n    ip_address: event.ip_address,\n    severity: ['break_glass.activated', 'key.blocked', 'assignment.deleted'].includes(event.event_type) ? 'high' : 'info',\n  }\n};"
+			},
+			"id": "transform",
+			"name": "Transform to SIEM Format",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"string": [
+						{
+							"value1": "={{ $json.severity }}",
+							"operation": "equals",
+							"value2": "high"
+						}
+					]
+				}
+			},
+			"id": "check-severity",
+			"name": "High Severity?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 1,
+			"position": [600, 300]
+		},
+		{
+			"parameters": {
+				"method": "POST",
+				"url": "https://your-siem.example.com/api/events",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{ "name": "Authorization", "value": "Bearer YOUR_SIEM_TOKEN" },
+						{ "name": "Content-Type", "value": "application/json" }
+					]
+				},
+				"sendBody": true,
+				"specifyBody": "json",
+				"jsonBody": "={{ JSON.stringify($json) }}"
+			},
+			"id": "send-siem",
+			"name": "Send to SIEM",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4,
+			"position": [800, 200]
+		},
+		{
+			"parameters": {
+				"channel": "#security-alerts",
+				"text": "=:warning: *High severity Lockwave event*\n*Type:* {{ $json.event_type }}\n*Actor:* {{ $json.actor.type }}:{{ $json.actor.id }}\n*IP:* {{ $json.ip_address }}\n*Time:* {{ $json.timestamp }}",
+				"otherOptions": {}
+			},
+			"id": "slack-high",
+			"name": "Alert High Severity",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [800, 350]
+		},
+		{
+			"parameters": {
+				"method": "POST",
+				"url": "https://your-siem.example.com/api/events",
+				"sendHeaders": true,
+				"headerParameters": {
+					"parameters": [
+						{ "name": "Authorization", "value": "Bearer YOUR_SIEM_TOKEN" },
+						{ "name": "Content-Type", "value": "application/json" }
+					]
+				},
+				"sendBody": true,
+				"specifyBody": "json",
+				"jsonBody": "={{ JSON.stringify($json) }}"
+			},
+			"id": "send-siem-low",
+			"name": "Send to SIEM (Info)",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4,
+			"position": [800, 500]
+		}
+	],
+	"connections": {
+		"New Audit Event": { "main": [[{ "node": "Transform to SIEM Format", "type": "main", "index": 0 }]] },
+		"Transform to SIEM Format": { "main": [[{ "node": "High Severity?", "type": "main", "index": 0 }]] },
+		"High Severity?": {
+			"main": [
+				[
+					{ "node": "Send to SIEM", "type": "main", "index": 0 },
+					{ "node": "Alert High Severity", "type": "main", "index": 0 }
+				],
+				[
+					{ "node": "Send to SIEM (Info)", "type": "main", "index": 0 }
+				]
+			]
+		}
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "siem" }, { "name": "security" }]
+}

@@ -1,0 +1,105 @@
+{
+	"name": "Lockwave: Onboard New Developer",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "trigger-1",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [200, 300]
+		},
+		{
+			"parameters": {
+				"assignments": {
+					"assignments": [
+						{ "id": "name", "name": "developerName", "value": "Jane Smith", "type": "string" },
+						{ "id": "publicKey", "name": "publicKey", "value": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... jane@laptop", "type": "string" },
+						{ "id": "hosts", "name": "hostIds", "value": "host-uuid-1,host-uuid-2", "type": "string" }
+					]
+				}
+			},
+			"id": "set-vars",
+			"name": "Set Developer Info",
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 3,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"resource": "sshKey",
+				"operation": "create",
+				"name": "={{ $json.developerName }}",
+				"mode": "import",
+				"publicKey": "={{ $json.publicKey }}"
+			},
+			"id": "import-key",
+			"name": "Import SSH Key",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [600, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "host",
+				"operation": "getAll",
+				"returnAll": true
+			},
+			"id": "list-hosts",
+			"name": "List All Hosts",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [600, 500],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "assignment",
+				"operation": "create",
+				"sshKeyId": "={{ $('Import SSH Key').item.json.id }}",
+				"hostUserId": "={{ $json.host_users[0].id }}",
+				"expiresAt": ""
+			},
+			"id": "create-assignment",
+			"name": "Assign Key to Host",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [800, 500],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"channel": "#devops",
+				"text": "=:key: *{{ $('Set Developer Info').item.json.developerName }}* has been onboarded to Lockwave.\nSSH key imported and assigned to {{ $('List All Hosts').item.length }} hosts.",
+				"otherOptions": {}
+			},
+			"id": "slack-notify",
+			"name": "Notify Slack",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [1000, 400]
+		}
+	],
+	"connections": {
+		"Manual Trigger": { "main": [[{ "node": "Set Developer Info", "type": "main", "index": 0 }]] },
+		"Set Developer Info": {
+			"main": [
+				[
+					{ "node": "Import SSH Key", "type": "main", "index": 0 },
+					{ "node": "List All Hosts", "type": "main", "index": 0 }
+				]
+			]
+		},
+		"List All Hosts": { "main": [[{ "node": "Assign Key to Host", "type": "main", "index": 0 }]] },
+		"Assign Key to Host": { "main": [[{ "node": "Notify Slack", "type": "main", "index": 0 }]] }
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "onboarding" }]
+}

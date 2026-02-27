@@ -1,0 +1,139 @@
+{
+	"name": "Lockwave: Offboard Developer",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "trigger-off",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [200, 300]
+		},
+		{
+			"parameters": {
+				"assignments": {
+					"assignments": [
+						{ "id": "keyId", "name": "sshKeyId", "value": "KEY_UUID_HERE", "type": "string" },
+						{ "id": "reason", "name": "reason", "value": "Employee offboarding", "type": "string" }
+					]
+				}
+			},
+			"id": "set-vars",
+			"name": "Set Offboard Info",
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 3,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"resource": "sshKey",
+				"operation": "block",
+				"sshKeyId": "={{ $json.sshKeyId }}",
+				"blockOptions": {
+					"blockedIndefinite": true,
+					"reason": "={{ $json.reason }}"
+				}
+			},
+			"id": "block-key",
+			"name": "Block SSH Key",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [600, 200],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "assignment",
+				"operation": "getAll",
+				"returnAll": true
+			},
+			"id": "list-assignments",
+			"name": "List All Assignments",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [600, 400],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"string": [
+						{
+							"value1": "={{ $json.ssh_key?.id }}",
+							"operation": "equals",
+							"value2": "={{ $('Set Offboard Info').item.json.sshKeyId }}"
+						}
+					]
+				}
+			},
+			"id": "filter-assignments",
+			"name": "Filter User Assignments",
+			"type": "n8n-nodes-base.filter",
+			"typeVersion": 1,
+			"position": [800, 400]
+		},
+		{
+			"parameters": {
+				"resource": "assignment",
+				"operation": "delete",
+				"assignmentId": "={{ $json.id }}"
+			},
+			"id": "delete-assignment",
+			"name": "Delete Assignment",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [1000, 400],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"resource": "sshKey",
+				"operation": "delete",
+				"sshKeyId": "={{ $('Set Offboard Info').item.json.sshKeyId }}"
+			},
+			"id": "delete-key",
+			"name": "Delete SSH Key",
+			"type": "n8n-nodes-lockwave.lockwave",
+			"typeVersion": 1,
+			"position": [1200, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"channel": "#devops",
+				"text": "=:wave: Developer offboarded from Lockwave.\n*Key:* {{ $('Set Offboard Info').item.json.sshKeyId }}\n*Reason:* {{ $('Set Offboard Info').item.json.reason }}\nSSH key blocked, assignments revoked, key deleted.",
+				"otherOptions": {}
+			},
+			"id": "slack-confirm",
+			"name": "Confirm in Slack",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [1400, 300]
+		}
+	],
+	"connections": {
+		"Manual Trigger": { "main": [[{ "node": "Set Offboard Info", "type": "main", "index": 0 }]] },
+		"Set Offboard Info": {
+			"main": [
+				[
+					{ "node": "Block SSH Key", "type": "main", "index": 0 },
+					{ "node": "List All Assignments", "type": "main", "index": 0 }
+				]
+			]
+		},
+		"List All Assignments": { "main": [[{ "node": "Filter User Assignments", "type": "main", "index": 0 }]] },
+		"Filter User Assignments": { "main": [[{ "node": "Delete Assignment", "type": "main", "index": 0 }]] },
+		"Delete Assignment": { "main": [[{ "node": "Delete SSH Key", "type": "main", "index": 0 }]] },
+		"Delete SSH Key": { "main": [[{ "node": "Confirm in Slack", "type": "main", "index": 0 }]] }
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "offboarding" }]
+}

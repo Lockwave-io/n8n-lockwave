@@ -1,0 +1,71 @@
+{
+	"name": "Lockwave: Host Offline Monitor",
+	"nodes": [
+		{
+			"parameters": {
+				"event": "hostStatusChange"
+			},
+			"id": "host-trigger",
+			"name": "Host Status Change",
+			"type": "n8n-nodes-lockwave.lockwaveTrigger",
+			"typeVersion": 1,
+			"position": [200, 300],
+			"credentials": {
+				"lockwaveApi": { "id": "1", "name": "Lockwave Production" }
+			}
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"string": [
+						{
+							"value1": "={{ $json.new_status }}",
+							"operation": "equals",
+							"value2": "offline"
+						}
+					]
+				}
+			},
+			"id": "check-offline",
+			"name": "Went Offline?",
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 1,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"channel": "#infrastructure",
+				"text": "=:red_circle: *Host Offline:* {{ $json.display_name }} ({{ $json.hostname }})\n*Previous status:* {{ $json.previous_status }}\n*Last seen:* {{ $json.last_seen_at }}\n*OS:* {{ $json.os }} / {{ $json.arch }}",
+				"otherOptions": {}
+			},
+			"id": "slack-offline",
+			"name": "Alert: Host Offline",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [600, 200]
+		},
+		{
+			"parameters": {
+				"channel": "#infrastructure",
+				"text": "=:large_green_circle: *Host Online:* {{ $json.display_name }} ({{ $json.hostname }})\n*Previous status:* {{ $json.previous_status }}\n*Current status:* {{ $json.new_status }}",
+				"otherOptions": {}
+			},
+			"id": "slack-online",
+			"name": "Alert: Host Back Online",
+			"type": "n8n-nodes-base.slack",
+			"typeVersion": 2,
+			"position": [600, 400]
+		}
+	],
+	"connections": {
+		"Host Status Change": { "main": [[{ "node": "Went Offline?", "type": "main", "index": 0 }]] },
+		"Went Offline?": {
+			"main": [
+				[{ "node": "Alert: Host Offline", "type": "main", "index": 0 }],
+				[{ "node": "Alert: Host Back Online", "type": "main", "index": 0 }]
+			]
+		}
+	},
+	"settings": { "executionOrder": "v1" },
+	"tags": [{ "name": "lockwave" }, { "name": "monitoring" }, { "name": "infrastructure" }]
+}
