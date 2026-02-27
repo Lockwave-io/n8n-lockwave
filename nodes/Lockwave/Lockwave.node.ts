@@ -356,11 +356,9 @@ export class Lockwave implements INodeType {
 					}
 					if (operation === 'download') {
 						const id = this.getNodeParameter('reportId', i) as string;
-						responseData = await lockwaveRequest.call(
-							this,
-							'GET',
-							`/reports/${id}/download`,
-						);
+						const binaryItem = await lockwaveRequestBinary.call(this, `/reports/${id}/download`);
+						returnData.push(binaryItem);
+						continue;
 					}
 				}
 
@@ -486,7 +484,14 @@ async function lockwaveRequestAllPages(
 	const allResults: any[] = [];
 	let cursor: string | null = null;
 
+	const maxPages = 100;
+	let pageCount = 0;
+
 	do {
+		if (++pageCount > maxPages) {
+			console.warn(`lockwaveRequestAllPages: reached max page limit (${maxPages}) for ${endpoint}`);
+			break;
+		}
 		const qs: Record<string, any> = { per_page: 100 };
 		if (cursor) {
 			qs.cursor = cursor;
@@ -527,4 +532,50 @@ async function lockwaveRequestAllPages(
 	} while (cursor);
 
 	return allResults;
+}
+
+async function lockwaveRequestBinary(
+	this: IExecuteFunctions,
+	endpoint: string,
+): Promise<INodeExecutionData> {
+	const credentials = await this.getCredentials('lockwaveApi');
+	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+
+	const options: any = {
+		method: 'GET' as IHttpRequestMethods,
+		url: `${baseUrl}/api/v1${endpoint}`,
+		headers: {
+			Accept: '*/*',
+		},
+		encoding: 'arraybuffer',
+		returnFullResponse: true,
+		json: false,
+	};
+
+	if (credentials.teamId) {
+		options.headers['X-Team-Id'] = credentials.teamId;
+	}
+
+	const response = await this.helpers.httpRequestWithAuthentication.call(
+		this,
+		'lockwaveApi',
+		options,
+	);
+
+	const contentDisposition = response.headers?.['content-disposition'] || '';
+	const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+	const filename = filenameMatch ? filenameMatch[1].replace(/['"]/g, '') : 'report.pdf';
+
+	const contentType = response.headers?.['content-type'] || 'application/octet-stream';
+
+	const binaryData = await this.helpers.prepareBinaryData(
+		Buffer.from(response.body),
+		filename,
+		contentType,
+	);
+
+	return {
+		json: { filename, contentType },
+		binary: { data: binaryData },
+	};
 }

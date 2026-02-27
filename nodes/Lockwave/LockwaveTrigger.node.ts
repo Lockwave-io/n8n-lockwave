@@ -93,12 +93,13 @@ export class LockwaveTrigger implements INodeType {
 			);
 
 			const events = response.data ?? response ?? [];
-			const lastKnownId = webhookData.lastId as string | undefined;
+			const stateKey = `lastId_${event}`;
+			const lastKnownId = webhookData[stateKey] as string | undefined;
 
 			if (!lastKnownId) {
 				// First run: store the latest ID and return nothing
 				if (events.length > 0) {
-					webhookData.lastId = events[0].id;
+					webhookData[stateKey] = events[0].id;
 				}
 				return null;
 			}
@@ -111,7 +112,7 @@ export class LockwaveTrigger implements INodeType {
 			}
 
 			if (responseData.length > 0) {
-				webhookData.lastId = responseData[0].id;
+				webhookData[stateKey] = responseData[0].id;
 			}
 		} else if (event === 'breakGlassActivated') {
 			options.url = `${baseUrl}/api/v1/break-glass`;
@@ -124,11 +125,12 @@ export class LockwaveTrigger implements INodeType {
 			);
 
 			const events = response.data ?? response ?? [];
-			const lastKnownId = webhookData.lastId as string | undefined;
+			const bgStateKey = `lastId_${event}`;
+			const lastKnownId = webhookData[bgStateKey] as string | undefined;
 
 			if (!lastKnownId) {
 				if (events.length > 0) {
-					webhookData.lastId = events[0].id;
+					webhookData[bgStateKey] = events[0].id;
 				}
 				return null;
 			}
@@ -142,7 +144,7 @@ export class LockwaveTrigger implements INodeType {
 			}
 
 			if (events.length > 0) {
-				webhookData.lastId = events[0].id;
+				webhookData[bgStateKey] = events[0].id;
 			}
 		} else if (event === 'hostStatusChange') {
 			options.url = `${baseUrl}/api/v1/hosts`;
@@ -191,11 +193,12 @@ export class LockwaveTrigger implements INodeType {
 			);
 
 			const reports = response.data ?? response ?? [];
-			const lastKnownId = webhookData.lastId as string | undefined;
+			const rptStateKey = `lastId_${event}`;
+			const lastKnownId = webhookData[rptStateKey] as string | undefined;
 
 			if (!lastKnownId) {
 				if (reports.length > 0) {
-					webhookData.lastId = reports[0].id;
+					webhookData[rptStateKey] = reports[0].id;
 				}
 				return null;
 			}
@@ -209,7 +212,7 @@ export class LockwaveTrigger implements INodeType {
 			}
 
 			if (reports.length > 0) {
-				webhookData.lastId = reports[0].id;
+				webhookData[rptStateKey] = reports[0].id;
 			}
 		} else {
 			return null;
