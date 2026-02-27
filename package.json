@@ -12,6 +12,10 @@
 		"infrastructure"
 	],
 	"license": "MIT",
+	"author": {
+		"name": "Lockwave",
+		"url": "https://lockwave.io"
+	},
 	"homepage": "https://lockwave.io",
 	"repository": {
 		"type": "git",

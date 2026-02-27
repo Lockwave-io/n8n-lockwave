@@ -1,0 +1,11 @@
+nodes/
+credentials/
+gulpfile.js
+tsconfig.json
+tslint.json
+*.ts
+!dist/**/*.js
+!dist/**/*.d.ts
+.git
+.gitignore
+workflows/
