@@ -44,4 +44,33 @@ export const teamFields: INodeProperties[] = [
 		},
 		description: 'The UUID of the team to retrieve',
 	},
+	// --- PAGINATION (getAll) ---
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				resource: ['team'],
+				operation: ['getAll'],
+			},
+		},
+		description: 'Whether to return all results or only up to a given limit',
+	},
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: { minValue: 1, maxValue: 100 },
+		default: 25,
+		displayOptions: {
+			show: {
+				resource: ['team'],
+				operation: ['getAll'],
+				returnAll: [false],
+			},
+		},
+		description: 'Max number of results to return',
+	},
 ];

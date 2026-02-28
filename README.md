@@ -193,6 +193,22 @@ npm link n8n-nodes-lockwave
 
 Restart n8n after linking. Changes require a rebuild (`npm run build`) and n8n restart.
 
+### Test with Docker
+
+You can run n8n in Docker and load this node from your local build for local testing.
+
+**Prerequisites:** Docker and Docker Compose.
+
+1. From the package directory, build the node: `npm run build`
+2. Start n8n: `docker compose up -d` (or `docker-compose up -d`)
+3. Open the n8n UI at **http://localhost:5678**
+4. Add a **Lockwave** credential (API token and Base URL, e.g. your local keystone-web or https://lockwave.io)
+5. Create a workflow using the **Lockwave** or **Lockwave Trigger** nodes, or import one from the `workflows/` directory
+
+After changing the node source, run `npm run build` and restart the container: `docker compose restart n8n`.
+
+Alternatively, run `npm run docker:dev` to build and start n8n in one step (foreground; use Ctrl+C to stop).
+
 ### Lint
 
 ```bash

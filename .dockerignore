@@ -1,0 +1,11 @@
+node_modules
+.git
+*.md
+!dist/**/*.md
+tests
+*.test.ts
+tsconfig.json
+tslint.json
+gulpfile.js
+.env*
+*.log
