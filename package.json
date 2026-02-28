@@ -21,10 +21,17 @@
 		"type": "git",
 		"url": "https://github.com/lockwave-io/n8n-nodes-lockwave.git"
 	},
+	"bugs": {
+		"url": "https://github.com/lockwave-io/n8n-nodes-lockwave/issues"
+	},
+	"engines": {
+		"node": ">=18"
+	},
 	"main": "index.js",
 	"scripts": {
 		"build": "tsc && gulp build:icons",
 		"dev": "tsc --watch",
+		"docker:dev": "npm run build && docker compose up",
 		"test": "jest --coverage",
 		"lint": "tslint -p tsconfig.json -c tslint.json",
 		"lintfix": "tslint --fix -p tsconfig.json -c tslint.json"
