@@ -11,6 +11,7 @@ import { teamOperations, teamFields } from './descriptions/TeamDescription';
 import { sshKeyOperations, sshKeyFields } from './descriptions/SshKeyDescription';
 import { hostOperations, hostFields } from './descriptions/HostDescription';
 import { hostUserOperations, hostUserFields } from './descriptions/HostUserDescription';
+import { projectOperations, projectFields } from './descriptions/ProjectDescription';
 import { assignmentOperations, assignmentFields } from './descriptions/AssignmentDescription';
 import { auditEventOperations, auditEventFields } from './descriptions/AuditEventDescription';
 import { breakGlassOperations, breakGlassFields } from './descriptions/BreakGlassDescription';
@@ -58,6 +59,7 @@ export class Lockwave implements INodeType {
 					{ name: 'Enrollment Token', value: 'enrollmentToken' },
 					{ name: 'Host', value: 'host' },
 					{ name: 'Host User', value: 'hostUser' },
+					{ name: 'Project', value: 'project' },
 					{ name: 'Report', value: 'report' },
 					{ name: 'SSH Key', value: 'sshKey' },
 					{ name: 'Team', value: 'team' },
@@ -71,6 +73,7 @@ export class Lockwave implements INodeType {
 			...sshKeyOperations,
 			...hostOperations,
 			...hostUserOperations,
+			...projectOperations,
 			...assignmentOperations,
 			...auditEventOperations,
 			...breakGlassOperations,
@@ -83,6 +86,7 @@ export class Lockwave implements INodeType {
 			...sshKeyFields,
 			...hostFields,
 			...hostUserFields,
+			...projectFields,
 			...assignmentFields,
 			...auditEventFields,
 			...breakGlassFields,
@@ -203,6 +207,10 @@ export class Lockwave implements INodeType {
 							os: this.getNodeParameter('os', i) as string,
 							arch: this.getNodeParameter('arch', i) as string,
 						};
+						const projectId = this.getNodeParameter('projectId', i, '') as string;
+						if (projectId) {
+							body.project_id = projectId;
+						}
 						responseData = await lockwaveRequest.call(this, 'POST', '/hosts', body);
 					}
 					if (operation === 'update') {
@@ -264,6 +272,45 @@ export class Lockwave implements INodeType {
 							'DELETE',
 							`/hosts/${hostId}/users/${hostUserId}`,
 						);
+					}
+				}
+
+				// ─── PROJECT ───
+				if (resource === 'project') {
+					if (operation === 'getAll') {
+						responseData = await handleGetAll.call(this, i, '/projects');
+					}
+					if (operation === 'get') {
+						const id = this.getNodeParameter('projectId', i) as string;
+						responseData = await lockwaveRequest.call(this, 'GET', `/projects/${id}`);
+					}
+					if (operation === 'create') {
+						const body: Record<string, any> = {
+							name: this.getNodeParameter('name', i) as string,
+						};
+						const description = this.getNodeParameter('description', i) as string;
+						if (description) {
+							body.description = description;
+						}
+						const color = this.getNodeParameter('color', i) as string;
+						if (color) {
+							body.color = color;
+						}
+						responseData = await lockwaveRequest.call(this, 'POST', '/projects', body);
+					}
+					if (operation === 'update') {
+						const id = this.getNodeParameter('projectId', i) as string;
+						const updateFields = this.getNodeParameter('updateFields', i) as Record<string, any>;
+						responseData = await lockwaveRequest.call(
+							this,
+							'PATCH',
+							`/projects/${id}`,
+							updateFields,
+						);
+					}
+					if (operation === 'delete') {
+						const id = this.getNodeParameter('projectId', i) as string;
+						responseData = await lockwaveRequest.call(this, 'DELETE', `/projects/${id}`);
 					}
 				}
 

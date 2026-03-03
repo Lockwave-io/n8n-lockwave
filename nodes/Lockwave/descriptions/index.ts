@@ -2,6 +2,7 @@ export { userOperations, userFields } from './UserDescription';
 export { teamOperations, teamFields } from './TeamDescription';
 export { sshKeyOperations, sshKeyFields } from './SshKeyDescription';
 export { hostOperations, hostFields } from './HostDescription';
+export { projectOperations, projectFields } from './ProjectDescription';
 export { hostUserOperations, hostUserFields } from './HostUserDescription';
 export { assignmentOperations, assignmentFields } from './AssignmentDescription';
 export { auditEventOperations, auditEventFields } from './AuditEventDescription';

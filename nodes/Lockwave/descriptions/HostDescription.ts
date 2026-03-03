@@ -125,6 +125,20 @@ export const hostFields: INodeProperties[] = [
 			{ name: 'arm64 (aarch64)', value: 'aarch64' },
 		],
 	},
+	// --- CREATE: optional project ---
+	{
+		displayName: 'Project ID',
+		name: 'projectId',
+		type: 'string',
+		default: '',
+		displayOptions: {
+			show: {
+				resource: ['host'],
+				operation: ['create'],
+			},
+		},
+		description: 'Optional UUID of the project to assign this host to',
+	},
 	// --- UPDATE ---
 	{
 		displayName: 'Update Fields',
@@ -161,6 +175,13 @@ export const hostFields: INodeProperties[] = [
 					{ name: 'macOS / Darwin', value: 'darwin' },
 					{ name: 'FreeBSD', value: 'freebsd' },
 				],
+			},
+			{
+				displayName: 'Project ID',
+				name: 'project_id',
+				type: 'string',
+				default: '',
+				description: 'UUID of the project to assign this host to (empty to unassign)',
 			},
 		],
 	},

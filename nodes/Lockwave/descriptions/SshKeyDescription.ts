@@ -177,6 +177,13 @@ export const sshKeyFields: INodeProperties[] = [
 				default: '',
 				description: 'New comment for the SSH key',
 			},
+			{
+				displayName: 'Project ID',
+				name: 'project_id',
+				type: 'string',
+				default: '',
+				description: 'UUID of the project to assign this key to (empty to unassign)',
+			},
 		],
 	},
 	// --- BLOCK ---
